@@ -2,7 +2,6 @@ package app.myappusers;
 
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -14,7 +13,7 @@ import java.util.List;
 class UserServiceImpl implements UserService {
 
     private final UsersRepository usersRepository;
-    private BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     public UserServiceImpl(UsersRepository usersRepository, BCryptPasswordEncoder bCryptPasswordEncoder) {
         this.usersRepository = usersRepository;
@@ -37,7 +36,7 @@ class UserServiceImpl implements UserService {
     @Override
     public UserDto createNewUser(UserDto userDto) {
         userDto.setId(UsersKeyGenerator.generateUUIDKey());
-        userDto.setEncryptedPassword(bCryptPasswordEncoder.encode(userDto.getPassword()));
+        userDto.setEncryptedPassword(this.bCryptPasswordEncoder.encode(userDto.getPassword()));
         var mapper = new ModelMapper();
         mapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         var entity = this.usersRepository.save(mapper.map(userDto, UserEntity.class));
@@ -46,8 +45,15 @@ class UserServiceImpl implements UserService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        var userEntity = this.usersRepository.findUserEntityByEmail(username)
+        //System.out.println("got the email  here in load by username  = " + username);
+        var userEntity = this.usersRepository.findByEmail(username)
                 .orElseThrow();
+
+        //System.out.println("userEntity.toString() = " + userEntity.toString());
+//        System.out.println("authUser = " +
+//                "user " + authUser.getUsername() + "auth" + authUser.getAuthorities() );
+
         return new AuthUser(userEntity);
+
     }
 }

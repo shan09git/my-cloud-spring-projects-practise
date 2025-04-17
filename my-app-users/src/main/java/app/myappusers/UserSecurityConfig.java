@@ -6,8 +6,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
@@ -18,42 +19,39 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 public class UserSecurityConfig {
 
     private final Environment environment;
-    private UserService userService;
+    private final UserService userService;
+    private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public UserSecurityConfig(Environment environment, UserService userService) {
+    public UserSecurityConfig(Environment environment, UserService userService, BCryptPasswordEncoder bCryptPasswordEncoder) {
         this.environment = environment;
         this.userService=userService;
+        this.bCryptPasswordEncoder = bCryptPasswordEncoder;
     }
 
-    @Bean
-    BCryptPasswordEncoder bCryptPasswordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 
         var authenticationManagerBuilder = httpSecurity.getSharedObject(AuthenticationManagerBuilder.class);
-        authenticationManagerBuilder.userDetailsService(userService).passwordEncoder(bCryptPasswordEncoder());
+        authenticationManagerBuilder.userDetailsService(userService).passwordEncoder(bCryptPasswordEncoder);
         var authenticationManager= authenticationManagerBuilder.build();
 
-        // user filter
         var userFilter = new UserAuthFilter(authenticationManager, environment);
         userFilter.setFilterProcessesUrl("/users/login");
 
         httpSecurity
-                .csrf((csrf) -> csrf.disable());
+                .csrf(AbstractHttpConfigurer::disable);
 
         httpSecurity
                 .authorizeHttpRequests((auth) -> auth
                         //.requestMatchers(new AntPathRequestMatcher("/users/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/users")).access(
                                 new WebExpressionAuthorizationManager(
-                                        "hasIpAddress('" + environment.getProperty("my.app.gateway.ip.address") + "')"))
+                                        "hasIpAddress('" + this.environment.getProperty("my.app.gateway.ip.address") + "')"))
                         .requestMatchers(new AntPathRequestMatcher("/users/find/**")).access(
                                 new WebExpressionAuthorizationManager(
-                                        "hasIpAddress('" + environment.getProperty("my.app.gateway.ip.address") + "')"))
-                        .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll())
+                                        "hasIpAddress('" + this.environment.getProperty("my.app.gateway.ip.address") + "')")))
+//                        .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll())
                 .sessionManagement((session) -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
@@ -63,7 +61,7 @@ public class UserSecurityConfig {
 
         httpSecurity
                 .headers((headers) -> headers
-                        .frameOptions((frameOptions) -> frameOptions.sameOrigin()));
+                        .frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
 
         return httpSecurity.build();
 

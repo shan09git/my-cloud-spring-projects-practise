@@ -36,10 +36,20 @@ public class UserAuthFilter extends UsernamePasswordAuthenticationFilter {
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
         try {
             var authModel = new ObjectMapper().readValue(request.getInputStream(), AuthModel.class);
-
+            //System.out.println("got this email and password = " + authModel.toString());
             var authentication = getAuthenticationManager().authenticate(
                     new UsernamePasswordAuthenticationToken(authModel.getEmail(),
                             authModel.getPassword(), new ArrayList<>()));
+
+            //System.out.println("authentication = " + authentication.toString());
+
+//            authentication
+//                    .getAuthorities()
+//                    .stream()
+//                    .forEach(auth ->
+//                            System.out.println("authority -> ***    " + auth.getAuthority()));
+
+
             return authentication;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -50,7 +60,7 @@ public class UserAuthFilter extends UsernamePasswordAuthenticationFilter {
     protected void successfulAuthentication(HttpServletRequest request,
                                             HttpServletResponse response,
                                             FilterChain chain,
-                                            Authentication authResult) throws IOException, ServletException {
+                                            Authentication authResult) throws IOException, ServletException, NullPointerException {
         var authenticatedUser = (AuthUser) authResult.getPrincipal();
 
         var secretKeys = Keys
@@ -63,6 +73,8 @@ public class UserAuthFilter extends UsernamePasswordAuthenticationFilter {
                 .issuedAt(Date.from(now()))
                 .signWith(secretKeys)
                 .compact();
+
+        //System.out.println("jwtToken = " + jwtToken);
 
         response.addHeader("token", jwtToken);
         response.addHeader("user", authenticatedUser.getUsername());
