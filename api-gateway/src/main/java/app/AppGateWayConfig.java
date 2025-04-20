@@ -6,12 +6,23 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class HttpClientResolverFixConfig {
+public class AppGateWayConfig {
 
     @Bean
     public HttpClientCustomizer httpClientResolverCustomizer() {
         return httpClient -> httpClient
                 .resolver(DefaultAddressResolverGroup.INSTANCE);
     }
+
+    @Bean
+    AuthorizationHeaderFilter authorizationHeaderFilter() {
+        return new AuthorizationHeaderFilter();
+    }
+
+    @Bean
+    AppPreFilter appPreFilter() {
+        return new AppPreFilter();
+    }
+
 
 }

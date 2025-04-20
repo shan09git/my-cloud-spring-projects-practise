@@ -24,7 +24,7 @@ public class UserSecurityConfig {
 
     public UserSecurityConfig(Environment environment, UserService userService, BCryptPasswordEncoder bCryptPasswordEncoder) {
         this.environment = environment;
-        this.userService=userService;
+        this.userService = userService;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
     }
 
@@ -34,7 +34,7 @@ public class UserSecurityConfig {
 
         var authenticationManagerBuilder = httpSecurity.getSharedObject(AuthenticationManagerBuilder.class);
         authenticationManagerBuilder.userDetailsService(userService).passwordEncoder(bCryptPasswordEncoder);
-        var authenticationManager= authenticationManagerBuilder.build();
+        var authenticationManager = authenticationManagerBuilder.build();
 
         var userFilter = new UserAuthFilter(authenticationManager, environment);
         userFilter.setFilterProcessesUrl("/users/login");
@@ -44,14 +44,20 @@ public class UserSecurityConfig {
 
         httpSecurity
                 .authorizeHttpRequests((auth) -> auth
-                        //.requestMatchers(new AntPathRequestMatcher("/users/**")).permitAll()
-                        .requestMatchers(new AntPathRequestMatcher("/users")).access(
+                        //                       .requestMatchers("/users/**").permitAll()
+                        .requestMatchers("/users")
+                        .access(
                                 new WebExpressionAuthorizationManager(
                                         "hasIpAddress('" + this.environment.getProperty("my.app.gateway.ip.address") + "')"))
-                        .requestMatchers(new AntPathRequestMatcher("/users/find/**")).access(
+                        .requestMatchers("/users/status/check")
+                        .access(
                                 new WebExpressionAuthorizationManager(
-                                        "hasIpAddress('" + this.environment.getProperty("my.app.gateway.ip.address") + "')")))
+                                        "hasIpAddress('" + this.environment.getProperty("my.app.gateway.ip.address") + "')"))
+
+//                        .anyRequest().authenticated()
+                )
 //                        .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll())
+
                 .sessionManagement((session) -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 

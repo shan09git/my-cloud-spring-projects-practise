@@ -22,7 +22,7 @@ class UserController {
         this.userService = userService;
     }
 
-    @GetMapping("/find/status/check")
+    @GetMapping("/status/check")
     String getStatus() {
         return "up and running on port " + this.environment.getProperty("local.server.port");
     }
@@ -36,7 +36,7 @@ class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/find/")
+    @GetMapping("/get/")
     ResponseEntity<List<UserResponseModel>> findAll() {
         var resposneList = this.userService.findAll()
                 .stream()
